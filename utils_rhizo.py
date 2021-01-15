@@ -14,6 +14,35 @@ import pygimli as pg
 
 class fct_utils(): 
 
+    def definePath(main,date,**kwargs):
+        #%% define PATHS 
+        # or set you working directory local path here 
+        #main = os.getcwd()
+        #os.chdir(main)
+        
+        geomPath= './geom/'
+        meshPath= './mesh/'
+        icsdPath= './icsd/'
+        
+        rmvInvalid = False
+        all_gates = False
+        Nfix = False
+        gateIP = False
+        
+        icsdPath += date 
+        if rmvInvalid is False: 
+            icsdPath += '_raw' 
+        if all_gates: 
+            icsdPath += '_AllG' 
+        if Nfix: 
+            icsdPath += '_Nfix' 
+        if gateIP: 
+            icsdPath += '_M' + str(gateIP)
+        icsdPath += '/'
+        
+        return geomPath, meshPath, icsdPath
+
+
 #%%  ------- MALM -----------------------------------------------------####
 
     def mk_seqMALM(a_injection = 72, b_return = 2, sensors=None, mesh=None, 
