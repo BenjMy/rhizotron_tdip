@@ -5,4 +5,4 @@ channels:
   - anaconda
   - conda
 dependencies:
-  - gimli/label/test pygimli
+  - pygimli
