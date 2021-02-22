@@ -10,7 +10,7 @@ import os
 from pygimli.viewer.mpl import drawStreams
 from scipy import interpolate
 import matplotlib.pyplot as plt
-import pygimli as pg
+#import pygimli as pg
 
 class fct_utils(): 
 
