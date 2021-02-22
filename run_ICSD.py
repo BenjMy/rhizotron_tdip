@@ -10,7 +10,7 @@ from icsd3d_class import iCSD3d as i3d
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
-def icsd_TDIP_plant(icsdPath,inputfile,all_gates):
+def icsd_TDIP_plant(icsdPath,inputfile,all_gates,IPcurves):
        
     #mpl_plot.showObs2d(path2files+'/')
     sep = '_'
@@ -45,7 +45,7 @@ def icsd_TDIP_plant(icsdPath,inputfile,all_gates):
         
         NameSave = 'O'+ os.path.basename(inputfile).split(sep, 1)[0] + '.txt'
         fig, ax = plt.subplots()
-        icsd=i3d(dirName=path2files +'/')   
+        icsd=i3d(dirName=icsdPath +'/')   
         icsd.createSurvey(fname_obs=NameSave,fname_sim='VRTeSim.txt')
         icsd.method_m0='F1'
         m0 = icsd.estimateM0(method_m0='F1',show=True,ax=ax)
@@ -54,7 +54,7 @@ def icsd_TDIP_plant(icsdPath,inputfile,all_gates):
         for i, g in enumerate(range(1,20,8)):
             NameSave = 'O'+ os.path.basename(inputfile).split(sep, 1)[0] + 'M'+ str(g) + '.txt'
             print(NameSave)
-            icsd=i3d(dirName=path2files +'/')   
+            icsd=i3d(dirName=icsdPath +'/')   
             icsd.createSurvey(fname_obs=NameSave,fname_sim='VRTeSim.txt')
             m0 = icsd.estimateM0(method_m0='F1',show=True, ax=ax[i])
             ax[i].set_title('Gate t:' + str(IPcurves.t[g]) + 's')
@@ -64,7 +64,7 @@ def icsd_TDIP_plant(icsdPath,inputfile,all_gates):
         fig, ax = plt.subplots(nrows=1, ncols=4)
         for i, g in enumerate(range(1,20,5)):
             NameSave = 'O'+ os.path.basename(inputfile).split(sep, 1)[0] + 'M'+ str(g) + '.txt'
-            icsd=i3d(dirName=path2files +'/')   
+            icsd=i3d(dirName=icsdPath +'/')   
             icsd.createSurvey(fname_obs=NameSave,fname_sim='VRTeSim.txt')
             sol= icsd.invert(wr=1)
             icsd.showResults(ax=ax[i])

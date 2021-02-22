@@ -24,15 +24,15 @@ os.chdir(main)
 def invert_Resipy_ERT(inputfileERT):
         
 
-    date = '1217' #
-    inputfileERT = 'ERT_0113.csv' #'ERT_1217.csv'
-    inputfileMALM = 'MALM_0113.csv' #'MALM_1217.csv'
+    #date = '1217' #
+    #inputfileERT = 'ERT_0113.csv' #'ERT_1217.csv'
+    #inputfileMALM = 'MALM_0113.csv' #'MALM_1217.csv'
     # Put the current folder
     #MainPath='E:/Padova/Experiments/2020_Rhizotron_Veronika_PRD_vitis_EIT/rhizo_gui/LAB/Using_code'
     #os.chdir(MainPath)
     # https://hkex.gitlab.io/resipy/api.html
     
-    geomPath, meshPath, icsdPath = FU.definePath(main,date)
+    #geomPath, meshPath, icsdPath = FU.definePath(main,date)
     
     # ---------------------------------------------------------#
     # create an instance of R2
@@ -109,7 +109,6 @@ def invert_Resipy_ERT(inputfileERT):
                   use_pyvista=True,pvshow=True,
                   xlim=[0,0.45],ylim=[-0.03,0],zlim=[0,0.5])
     
-    #k.saveInvPlots(MainPath + 'figs')
     # k.showInvError() # all errors should be between -3 and 3
     
     # ---------------------------------------------------------#
@@ -157,7 +156,6 @@ def invert_pygimli_ERT(inputfileERT,sensors,mesh):
     dataERT.set("k", k)
     dataERT.set('r', dataERT('u')/dataERT('i'))
     dataERT.set('rhoa', dataERT('r')*dataERT('k'))
-    dataERT.set('rhoa', dataERT('r')*dataERT('k'))
     dataERT['err'] = ert.estimateError(dataERT, 
                                        absoluteError=0.001, 
                                        relativeError=0.03)
@@ -167,8 +165,17 @@ def invert_pygimli_ERT(inputfileERT,sensors,mesh):
     # ert.setMesh(mesh3d)  # important to do it explicitly as it avoids rebuilding region manager etc.
     # C = pg.matrix.GeostatisticConstraintsMatrix(mesh=ert.fop.paraDomain, I=[25, 5], dip=-25)
     # ert.fop.setConstraints(C)
-    model = ert.invert(mesh=mesh,lam=100)
     
+    # Set refernce nodes in corners (necessary for closed geometries)
+    lower_left_node = mesh.findNearestNode([mesh.xmin(), mesh.ymin(), 0.0])
+    mesh.node(lower_left_node).setMarker(-1000) #MARKER_NODE_CALIBRATION
+    
+    lower_right_node = mesh.findNearestNode([mesh.xmax(), mesh.ymin(), 0.0])
+    mesh.node(lower_right_node).setMarker(-999)    #MARKER_NODE_REFERENCEELECTRODE
+
+    model = ert.invert(mesh=mesh,lam=100,verbose=True)
+    pg.info('Inversion stopped with chi² = {0:.3}'.format(ert.fw.chi2()))
+
     return model
 
 

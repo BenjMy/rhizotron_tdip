@@ -15,7 +15,7 @@ import pygimli as pg
 from utils_rhizo import fct_utils as FU
 from MALM4RootsRhizo_class import MALM4RootsRhizo_class as MR
 from run_ICSD import icsd_TDIP_plant
-from run_invert_pygimli_ERT import invert_Resipy_ERT, invert_pygimli_ERT
+from run_ERT_invert_plant import invert_Resipy_ERT, invert_pygimli_ERT
 # General libraries
 import numpy as np
 import matplotlib.pyplot as plt
@@ -32,14 +32,15 @@ plt.close('all')
 
 #%% Define survey parameters (see excel file for correspondance dates/files/parameters)
 invERT = False
-waterRes = (1/767)*1e4 #21.23 # water resistivity (Ohm.m) converted from microS/cm 767, 477 
+waterRes = (1/855)*1e4 #21.23 # water resistivity (Ohm.m) converted from microS/cm 767, 477 
 rec = True # reciprocal analysis
 A = 72-1 # Id electrode A
 B = 65-1 # Id electrode B
 injection_duration = 2 # time of injection
-date = '0113' #  '1712' 0112 '1310' '1611' # (ddmm)
-# 'MALMIP1217' 'MALMIP1201.bin' 'MALMIP1013' 'MALMIP1116.bin' # filename in raw data folder
-inputfile = 'MALMIP_0113.bin' #  
+# MALMIP_0122 MALMIP_0113 'MALMIP1217' 'MALMIP1201.bin' 'MALMIP1013' 'MALMIP1116.bin' # filename in raw data folder
+date = '0209' #  '1712' 0112 '1310' '1611' # (ddmm)
+inputfileMALM = 'MALMIP_' + date + '.bin' #  
+inputfileERT = 'ERT_' + date + '.bin' #
 plotCC = False # show Cole-Cole fitted parameters (to compare with literature)
 split_Nfix = [True, 71-1]
 Nfix = 71-1 #71-1  #None 71-1 # Id electrode N , put None if N is varying
@@ -53,7 +54,7 @@ if not all_gates:
     gateIP = 3 
 else: gateIP = None # id extracted time window in mV/V (?)
 
-icsd = True
+# icsd = True
 
 main = os.getcwd()
 os.chdir(main)
@@ -62,17 +63,30 @@ geomPath, meshPath, icsdPath = FU.definePath(main,date)
     
 #%% LOAD geometry and mesh
 RemLineNb, Injection, coordE, pointsE= load_geom(geomPath) # geometry file containing electrodes position includinf remotes 
-mesh3d, sensors = FU.mesh_import(meshPath + 'BaseRhizo_Vrte.msh')
+mesh3d_fwd, sensors = FU.mesh_import(meshPath + 'BaseRhizo_Vrte.msh')
+mesh3d_inv, sensors = FU.mesh_import(meshPath + 'BaseRhizo_Vrte_inv.msh')
 
 #%% INVERT ERT data
 
 if invERT:
-    # inputfileERT = 'ERT_0113.csv'
-    # k = invert_Resipy_ERT(inputfileERT)
-
-    inputfileERT = 'ERT_0113.bin'
-    model = invert_pygimli_ERT(inputfileERT,sensors,mesh3d)
+    inputfileERTcsv = 'ERT_' + date + '.csv'
+    k = invert_Resipy_ERT(inputfileERTcsv)
+    k.showResults()
     
+    #inputfileERT = 'ERT_0122.bin'
+    model = invert_pygimli_ERT(inputfileERT,sensors,mesh3d_inv)
+    pg.show(mesh3d_inv,data=model,notebook=True)
+    mesh3d_inv.addData('model',model)
+    mesh3d_inv.exportVTK('model' + date + '.vtk')
+    
+    plotter, _ = pg.show(mesh3d_inv, data=model,
+                         alpha=0.9, hold=True, notebook=True)
+    plotter.view_xy()
+    #plotter.clim([20, 60])
+    plotter.show()
+    plotter.screenshot('model' + date + '.png')
+#plt.imshow(plotter.image)
+#plt.show()
 #%% filterTDIP
 
 def filterTDIP(dataTDIP,id2rmv):
@@ -85,11 +99,12 @@ def filterTDIP(dataTDIP,id2rmv):
     return dataTDIP, valid
 
 #%% Import data TDIP
-IPcurves = tdip.TDIPdata('./raw_data/' + inputfile) # e.g. ABEM or Syscal TXT export
+IPcurves = tdip.TDIPdata('./raw_data/' + inputfileMALM) # e.g. ABEM or Syscal TXT export
 valid = np.ones(len(IPcurves.data('m')))
 
-#%% split and filter
-IPcurves_f = tdip.TDIPdata('./raw_data/' + inputfile)
+#%% split and filter to Nfix
+# ----------------
+IPcurves_f = tdip.TDIPdata('./raw_data/' + inputfileMALM)
 
 if split_Nfix[0]:
 
@@ -109,8 +124,9 @@ if split_Nfix[0]:
     
     IPcurves_f, valid_split = filterTDIP(IPcurves_f,id_elec_2rmv)
 
-#%% Import data and visualisation
 
+# remove outliers 
+# ----------------
 if rmv_outliers: 
     id_outliers = np.where(abs(IPcurves_f.data['M1'])>100)[0]
     id_elec_2rmv= list(id_outliers)
@@ -118,9 +134,9 @@ if rmv_outliers:
         id_elec_2rmv.append(rmv_id)
     IPcurves_f, valid_outliers = filterTDIP(IPcurves_f,id_elec_2rmv)
 
-#%%
 j=0
 # Ensure variable is defined
+# ----------------
 try:
     valid_split
 except NameError:
@@ -140,50 +156,44 @@ for i, v in enumerate(valid_split):
         valid[i] = 0    
         
 np.count_nonzero(valid==0)
-#%%
-
+#%% Show decay
+# ----------------
 IPcurves_f.showDecay(nr=np.arange(0,len(IPcurves_f.data['a'])), showFit=False, 
                    yscale='linear',xscale='linear')
 
 
 if rmvInvalid is False:
-    IPcurves_f = tdip.TDIPdata('./raw_data/' + inputfile)
+    IPcurves_f = tdip.TDIPdata('./raw_data/' + inputfileMALM)
     
 #%% plot Cole Cole model parameters 
+# ----------------
 if plotCC:
    plot_CC_violin(m0,tau,fit,r)
 
 #%% select observation data - in preparaion for ICSD analysis --> 3 files required (same folder)
 # 1st file needed = virtual electrode position
-VRTEpos= FU.VRTEpos(mesh=mesh3d,dim=3) # return VRTE file format icsd MarkerVRTE=991
+VRTEpos= FU.VRTEpos(mesh=mesh3d_fwd,dim=3) # return VRTE file format icsd MarkerVRTE=991
 #plt.scatter(VRTEpos[:,0],VRTEpos[:,1],color='b')
 
 # 2nd file = observations data
-Obs_raw = pb.importer.importSyscalPro('./raw_data/' + inputfile) 
-Obs, dataABMN=  FU.PrepareMALMData('./raw_data/' + inputfile, Rec=False, DevErr=1,
+Obs_raw = pb.importer.importSyscalPro('./raw_data/' + inputfileMALM) 
+Obs, dataABMN=  FU.PrepareMALMData('./raw_data/' + inputfileMALM, Rec=False, DevErr=1,
                            MinV=1, MaxRc=1, Kfact=1, MinMaxAppRes=1, 
                            SwE=False, 
                            valid=valid)
 
 # 2nd file = observations data = TDIP
-Obs_IP, dataABMN=  FU.PrepareMALMData('./raw_data/' + inputfile, Rec=False, DevErr=1,
+Obs_IP, dataABMN=  FU.PrepareMALMData('./raw_data/' + inputfileMALM, Rec=False, DevErr=1,
                            MinV=1, MaxRc=1, Kfact=1, MinMaxAppRes=1, 
                            SwE=False, gIP=gateIP, 
                            valid=valid) # remove reciprocal from original dataset
 
-    
-#%%
 if all_gates:
     for i, g in enumerate(range(1,20,1)):
-        Obs_IP, dataABMN=  FU.PrepareMALMData('./raw_data/' + inputfile, Rec=False, DevErr=1,
+        Obs_IP, dataABMN=  FU.PrepareMALMData('./raw_data/' + inputfileMALM, Rec=False, DevErr=1,
                                    MinV=1, MaxRc=1, Kfact=1, MinMaxAppRes=1, 
                                    SwE=False, gIP=g, 
                                    valid=valid) # remove reciprocal from original dataset
-
-#Obs.setSensorPositions(coordE[:,1:3])
-#Obs.save('obs.data')
-
-# filter out wrong electrodes 
 
 coordE_f = []
 for i, mi in enumerate(Obs['m']):
@@ -197,16 +207,14 @@ coordE_f = np.array(coordE_f)
 # filter out wrong observation 
 if (rmvInvalid or split_Nfix[0]) is False:
     print('raw analysis')
-    Obs, dataABMN=  FU.PrepareMALMData('./raw_data/' + inputfile, Rec=False, DevErr=1,
+    Obs, dataABMN=  FU.PrepareMALMData('./raw_data/' + inputfileMALM, Rec=False, DevErr=1,
                                MinV=1, MaxRc=1, Kfact=1, MinMaxAppRes=1, 
                                SwE=False,
                                valid=None)
-    Obs_IP, dataABMN=  FU.PrepareMALMData('./raw_data/' + inputfile, Rec=False, DevErr=1,
+    Obs_IP, dataABMN=  FU.PrepareMALMData('./raw_data/' + inputfileMALM, Rec=False, DevErr=1,
                                MinV=1, MaxRc=1, Kfact=1, MinMaxAppRes=1, 
                                SwE=False, gIP=gateIP, 
                                valid=None) # remove reciprocal from original dataset
-#len(dataABMN)
-
     coordE_f = []
     for i, mi in enumerate(Obs['m']):
         if mi==Nfix:
@@ -214,19 +222,32 @@ if (rmvInvalid or split_Nfix[0]) is False:
         id_coordE_f = np.where(mi+1==coordE[:,0])[0]
         coordE_f.append(coordE[id_coordE_f[0],:])
     coordE_f = np.array(coordE_f)
-        
+
+#%% foward modelling of homogeneous medium
+# interpolate to MALM fwd mesh
+if invERT:
+    rho = pg.interpolate(mesh3d_fwd, mesh3d_inv, model, method='spline')
+    rhomap = rho.array()
+    id0 = np.where(rho.array() <=0)
+    rhomap[id0] = 0.1
+else:
+    rhomap = [[1, waterRes],
+              [2, waterRes]]
+
+#%% MR.SimulateSynthMALMSol(mesh=mesh3d_fwd,SeqSol=dataABMN-1,rhomap=model)
+
 #%% foward modelling of Green's functions
 # mk_full_malm --> 3rd file = simulated green functions (simulated data to compare with observation data)
-SeqFullMALM= MR.mk_full_malm(dataABMN-1, VRTe = range(len(sensors), len(sensors)+len(VRTEpos)),
-                             mesh=mesh3d, R3=False) # output .shm with sensors
+SeqFullMALM= MR.mk_full_malm(dataABMN-1, 
+                             VRTe = range(len(sensors),
+                                          len(sensors)+len(VRTEpos)),
+                             mesh=mesh3d_fwd, 
+                             R3=False) # output .shm with sensors
 
-rhomap = [[1, waterRes],
-          [2, waterRes]]
+#pg.show(mesh3d_fwd,data=rhomap,notebook=True)
+#pg.show(mesh3d_inv,data=rhomap,notebook=True)
 
-
-
-rho = pg.solver.parseArgToArray(rhomap, mesh3d.cellCount(), mesh3d)
-MR.SimulateGreenFcts(mesh_VRTs=mesh3d,rhomapVRTs=rho,schemeVrts=SeqFullMALM, 
+MR.SimulateGreenFcts(mesh_VRTs=mesh3d_fwd,rhomapVRTs=rhomap,schemeVrts=SeqFullMALM, 
                      Name='VRTeSim')
 
 #%% copy file to icsd folder
@@ -247,25 +268,32 @@ shutil.copy('VRTeCoord.txt', icsdPath)
 if Nfix is not None:
 
     FU.streamlines(coordE_f, Obs('r').array(), waterRes,
-                   sensors=sensors, A=A, B=B, Nfix=Nfix)
-    
-    fig, ax = plt.subplots(nrows=1, ncols=4)
+                   sensors=sensors, A=A, B=B, Nfix=Nfix,
+                    vmin=-300, vmax=200)
+    plt.savefig('streamlines_PV.png')
+
+    fig, ax = plt.subplots(nrows=1, ncols=4,figsize=(20,5))
     for i, g in enumerate(range(1,20,5)):
         FU.streamlines(coordE_f, Obs('M'+str(g)).array(), waterRes,
                        sensors=sensors, A=A, B=B, Nfix=Nfix, ax=ax[i],
                        vmin=-10, vmax=10)
         ax[i].set_title('Gate t:' + str(IPcurves.t[g-1]) + 's')
-        
-    fig, ax = plt.subplots(nrows=1, ncols=4)
+        plt.tight_layout()
+        plt.savefig('streamlines_transients.png')
+
+    fig, ax = plt.subplots(nrows=1, ncols=4,figsize=(20,5))
     for i, g in enumerate(range(1,20,5)):
         FU.streamlines(coordE_f, Obs('M'+str(g)).array(), waterRes,
                        sensors=sensors, A=A, B=B, Nfix=Nfix, ax=ax[i]
                        )
         ax[i].set_title('Gate t:' + str(IPcurves.t[g-1]) + 's')
+        plt.tight_layout()
+        plt.savefig('streamlines_transients2.png')
 
-        
-#%%
-if icsd:
-    icsd_TDIP_plant(icsdPath,inputfile,all_gates)
+
+#%%  
+
+#if icsd:
+#    icsd_TDIP_plant(icsdPath,inputfile,all_gates,IPcurves)
 
 

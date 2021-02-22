@@ -1,6 +1,0 @@
-Seigel, H. (1959) Mathematical Formulation and Type Curves for Induced Polarization. Geophysics, 24, 547-563. doi:10.1190/1.1438625
-
-Bazin, S., Lysdahl, A.K., Viezzoli, A., Günther, T., Anschütz, H., Scheibz, J., Pfaffhuber, A.A., Radic, T. &
-Fjermestad, H. (2018): Resistivity and chargeability survey for tunnel investigation: a case study on toxic black shale in Norway. Near Surface Geophysics 16(1), 1-11, doi:10.3997/1873-0604.2017036.
-
-Rossi, M., Dahlin, T., Olsson, P.-I. & Günther, T. (2018): Data acquisition, processing and filtering for reliable 3D resistivity and time-domain induced polarization tomography in an urban area: field example of Vinsta, Stockholm, Near Surface Geophysics 16(3), 220-229, doi:10.3997/1873-0604.2018014.

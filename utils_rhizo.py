@@ -23,6 +23,7 @@ class fct_utils():
         geomPath= './geom/'
         meshPath= './mesh/'
         icsdPath= './icsd/'
+        figpath= './fig/'
         
         rmvInvalid = False
         all_gates = False
@@ -40,7 +41,12 @@ class fct_utils():
             icsdPath += '_M' + str(gateIP)
         icsdPath += '/'
         
-        return geomPath, meshPath, icsdPath
+        figpath += date + '/'
+        if not os.path.exists(figpath):
+            os.makedirs(figpath)
+    
+    
+        return geomPath, meshPath, icsdPath, figpath
 
 
 #%%  ------- MALM -----------------------------------------------------####
@@ -554,6 +560,53 @@ class fct_utils():
 
         """
         
+    def load_geom(path):
+        """ load the geometry of the acquisition (*geom file custum for Mise-à-la-masse data)
+        
+        Parameters
+        ----------
+
+        """
+        geom_files = [f for f in os.listdir(path) if f.endswith('.geom')]
+        if len(geom_files) != 1:
+            raise ValueError('should be only one geom file in the current directory')
+        
+        fileNameElec = geom_files[0]  
+        line_number = 0
+        line_of_injection = []
+        line_of_remotes = []
+        # Open the file in read only mode
+        with open(path + fileNameElec, 'r') as read_obj:
+            # Read all lines in the file one by one
+            for line in read_obj:
+                # For each line, check if line contains the string
+                # print(line)
+                line_number += 1
+                if ('#Remote') in line:
+                    # If yes, then add the line number & line as a tuple in the list
+                    line_of_remotes.append((line_number))
+                if ('#Injection') in line:
+                    line_of_injection.append((line_number))
+        
+        # print(line_of_injection)
+        # print(line_of_remotes)
+        RemLineNb= int(line_of_remotes[0])-1
+        Injection= int(line_of_injection[0])-1
+        
+        coordE = np.loadtxt(path+ fileNameElec)
+        pointsE= np.vstack(coordE[:RemLineNb,1:4])
+        
+        return RemLineNb, Injection, coordE, pointsE
+
+    def filterTDIP(dataTDIP,id2rmv):
+        valid = np.ones(len(dataTDIP.data('m')))
+        valid[id2rmv] = 0
+        dataTDIP.data.set('valid',valid)
+        dataTDIP.MA = dataTDIP.MA[:, dataTDIP.data['valid'].array()==1]
+        dataTDIP.data.removeInvalid()
+
+        return dataTDIP, valid
+    
 #%%
 # if Nfix is not None:
 #     fig, ax = plt.subplots(nrows=1, ncols=4)
