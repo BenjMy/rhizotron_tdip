@@ -2,5 +2,7 @@ name: example-environment
 channels:
   - defaults
   - conda-forge
+  - anaconda
+  - conda
 dependencies:
   - pybert
