@@ -2,11 +2,10 @@ channels:
 - conda-forge
 - gimli
 - defaults
-- pip
 dependencies:
 - matplotlib
 - pygimli
 - pybert
 - seaborn
-- resipy
 - pyvista
+- resipy
