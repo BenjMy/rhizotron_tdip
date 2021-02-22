@@ -1,8 +1,9 @@
-name: example-environment
 channels:
-  - defaults
-  - conda-forge
-  - anaconda
-  - conda
+- conda-forge
+- gimli
+- defaults
 dependencies:
-  - pygimli
+- matplotlib
+- pygimli
+- pybert
+- seaborn

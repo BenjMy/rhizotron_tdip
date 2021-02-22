@@ -10,8 +10,8 @@ import os
 from pygimli.viewer.mpl import drawStreams
 from scipy import interpolate
 import matplotlib.pyplot as plt
-#import pygimli as pg
-
+import pygimli as pg
+    
 class fct_utils(): 
 
     def definePath(main,date,**kwargs):
@@ -282,7 +282,7 @@ class fct_utils():
     def PrepareMALMData(DataName, Rec=False, 
                         MinV=1e-6, MaxRc=1e4, DevErr=5, Kfact=1e3, MinMaxAppRes=1e3, Rscheck=50,
                         SwE=False, ExpRec=True, gIP=None, RmvE=None,
-                        valid=None):
+                        valid=None,**kwargs):
         """
         Prepare MALM data for ICSD analysis
         
@@ -291,12 +291,17 @@ class fct_utils():
         return:
         ===
         """
-        
         Obs = pb.importer.importSyscalPro(DataName) 
         Obs.set('r', Obs('u')/Obs('i'))
         Obs.set('Rec',np.zeros(len(Obs('u'))))
         print("Data before filtering:", Obs)
 
+        savefile=False
+        for key, value in kwargs.items():
+            if key == 'savefile':
+                savefile = value
+
+                
         if Rec==True:
             sC = Obs.sensorCount()
             # Build an unique Index list for one measurement direction:
@@ -389,19 +394,21 @@ class fct_utils():
             print("Data after valid:", Obs)
 
         
-        if gIP: 
-            print('TDIP export')
-            sep = '_'
-            NameSave = 'O'+ os.path.basename(DataName).split(sep, 1)[0] + 'M'+str(gIP) + '.txt'
-            f = open(NameSave,'w')
-            np.savetxt(f, np.array(Obs['M'+str(gIP)]), delimiter='\t',fmt='%1.6f')   # X is an array
-            f.close()
-        else:
-            sep = '_'
-            NameSave = 'O'+ os.path.basename(DataName).split(sep, 1)[0] + '.txt'
-            f = open(NameSave,'w')
-            np.savetxt(f, np.array(Obs("r")), delimiter='\t',fmt='%1.6f')   # X is an array
-            f.close()
+        if savefile==True: 
+            if gIP: 
+                print('TDIP export')
+                sep = '_'
+                NameSave = 'O'+ os.path.basename(DataName).split(sep, 1)[0] + 'M'+str(gIP) + '.txt'
+                f = open(NameSave,'w')
+                np.savetxt(f, np.array(Obs['M'+str(gIP)]), delimiter='\t',fmt='%1.6f')   # X is an array
+                f.close()
+            else:
+                sep = '.'
+                NameSave = 'O'+ os.path.basename(DataName).split(sep, 1)[0] + '.txt'
+                f = open(NameSave,'w')
+                np.savetxt(f, np.array(Obs("r")), delimiter='\t',fmt='%1.6f')   # X is an array
+                f.close()
+                print(NameSave)
         
         
         dataABMN = [np.array(Obs('a'))+1, np.array(Obs('b'))+1,
@@ -431,13 +438,14 @@ class fct_utils():
         Pos_vrtS= np.vstack(Pos_vrtS)
     
         # --- Writing the VRTe Coordinates into a file! ------------------------------
-        f = open('VRTeCoord.txt','w')
-        np.savetxt(f, Pos_vrtS[:,0:2], delimiter='\t',fmt='%1.3f')   # X is an array
-        f.close()
-        if dim==3:
-            f = open('VRTeCoord.txt','w')
-            np.savetxt(f, Pos_vrtS[:,0:3], delimiter='\t',fmt='%1.3f')   # X is an array
-            f.close()
+        
+        #f = open('VRTeCoord.txt','w')
+        #np.savetxt(f, Pos_vrtS[:,0:2], delimiter='\t',fmt='%1.3f')   # X is an array
+        # f.close()
+        #if dim==3:
+        #     f = open('VRTeCoord.txt','w')
+        #     np.savetxt(f, Pos_vrtS[:,0:3], delimiter='\t',fmt='%1.3f')   # X is an array
+        #     f.close()
         return Pos_vrtS
     
     
@@ -466,13 +474,20 @@ class fct_utils():
         return mesh3d, np.vstack(sensors)
 
 
-    def streamlines(coordObs, Obs, Res, mesh=None, **kwargs):
+    def streamlines(coordObs, Obs, model, mesh=None, **kwargs):
         """
         Current streamlines
         -------
-        None.
+        - mesh: mesh to compute the quiver plot
     
         """
+        mesh_inv = [] # medium conductivity
+        for key, value in kwargs.items():
+            if key == 'Xaxis':
+                 Xaxis = value            
+            if key == 'mesh_inv':
+                 mesh_inv = value
+             
         xn = 30
         yn = 30
 
@@ -486,11 +501,18 @@ class fct_utils():
                                         (xx, yy), 
                                         method='cubic')
         uu = np.reshape(u_interp,[xn*yn])
-        data = uu/Res
 
         if mesh is None:
             mesh = pg.createGrid(x=np.linspace(min(coordObs[:,1]), max(coordObs[:,1]),xn),
                      y=np.linspace(min(coordObs[:,2]), max(coordObs[:,2]),yn))
+            
+        if isinstance(model, list):
+            Res = pg.interpolate(mesh, mesh_inv, model, method='spline')
+            stream = -pg.solver.grad(mesh, uu)*(1/Res).array()[:, None]
+        else: 
+            stream = -pg.solver.grad(mesh, uu)*(1/model)        
+
+
 
         if kwargs.get('vmin'):
            vmin = kwargs.get('vmin')
@@ -533,9 +555,12 @@ class fct_utils():
             gridCoarse = pg.createGrid(x=np.linspace(min(sensors[:,0]), max(sensors[:,0]),xn/2),
                              y=np.linspace(min(sensors[:,1]), max(sensors[:,1]),yn/2))
         
-        drawStreams(ax, mesh, -pg.solver.grad(mesh, data),
+
+        drawStreams(ax, mesh, stream,
                      color='green', quiver=True, linewidth=3.0)
         
+        
+        # save for TL analysis
         
         #j = -pg.solver.grad(mesh, uu) * (1/Res)
         #ax, _ = pg.show(mesh, hold=True, alpha=0.3)
@@ -601,9 +626,12 @@ class fct_utils():
     def filterTDIP(dataTDIP,id2rmv):
         valid = np.ones(len(dataTDIP.data('m')))
         valid[id2rmv] = 0
-        dataTDIP.data.set('valid',valid)
-        dataTDIP.MA = dataTDIP.MA[:, dataTDIP.data['valid'].array()==1]
-        dataTDIP.data.removeInvalid()
+
+        
+        #if remove == True:
+            #dataTDIP.data.set('valid',valid)
+            #dataTDIP.MA = dataTDIP.MA[:, dataTDIP.data['valid'].array()==1]
+            #dataTDIP.data.removeInvalid()
 
         return dataTDIP, valid
     

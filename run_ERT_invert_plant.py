@@ -21,7 +21,7 @@ from pygimli.physics.ert import ERTManager, createGeometricFactors
 main = os.getcwd()
 os.chdir(main)
     
-def invert_Resipy_ERT(inputfileERT):
+def invert_Resipy_ERT(date, inputfileERT):
         
 
     #date = '1217' #
@@ -32,12 +32,14 @@ def invert_Resipy_ERT(inputfileERT):
     #os.chdir(MainPath)
     # https://hkex.gitlab.io/resipy/api.html
     
-    #geomPath, meshPath, icsdPath = FU.definePath(main,date)
-    
+    invpath = main + 'invdir/resipy/' + date + '/'
+    if not os.path.exists(invpath):
+        os.makedirs(invpath)
+        
     # ---------------------------------------------------------#
     # create an instance of R2
     # ---------------------------------------------------------#
-    k = R2(main, typ='R3t')
+    k = R2(invpath, typ='R3t')
     
     # ---------------------------------------------------------#
     # create survey
@@ -158,7 +160,7 @@ def invert_pygimli_ERT(inputfileERT,sensors,mesh):
     dataERT.set('rhoa', dataERT('r')*dataERT('k'))
     dataERT['err'] = ert.estimateError(dataERT, 
                                        absoluteError=0.001, 
-                                       relativeError=0.03)
+                                       relativeError=0.1)
     dataERT.markInvalid(dataERT("rhoa") < 0)
     dataERT.removeInvalid()
     dataERT.save('dataERT.data')
@@ -173,7 +175,7 @@ def invert_pygimli_ERT(inputfileERT,sensors,mesh):
     lower_right_node = mesh.findNearestNode([mesh.xmax(), mesh.ymin(), 0.0])
     mesh.node(lower_right_node).setMarker(-999)    #MARKER_NODE_REFERENCEELECTRODE
 
-    model = ert.invert(mesh=mesh,lam=100,verbose=True)
+    model = ert.invert(mesh=mesh,lam=20,verbose=True)
     pg.info('Inversion stopped with chi² = {0:.3}'.format(ert.fw.chi2()))
 
     return model
