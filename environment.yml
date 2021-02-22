@@ -5,4 +5,4 @@ channels:
   - anaconda
   - conda
 dependencies:
-  - pybert
+  - gimli pybert
