@@ -8,5 +8,5 @@ dependencies:
 - pygimli
 - pybert
 - seaborn
-- resipy==3.2.3
+- resipy
 - pyvista
