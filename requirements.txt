@@ -1,5 +1,4 @@
 matplotlib
 numpy
 resipy==3.2.3
-pybert
-gimli
+conda install -f pybert
