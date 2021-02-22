@@ -1,5 +1,6 @@
 name: pybert-env
 channels:
+  - defaults 	
   - conda-forge
 dependencies:
   - pybert
