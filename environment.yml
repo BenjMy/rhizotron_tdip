@@ -1,0 +1,5 @@
+name: pybert-env
+channels:
+  - conda-forge
+dependencies:
+  - pybert
