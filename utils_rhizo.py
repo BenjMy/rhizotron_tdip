@@ -506,12 +506,12 @@ class fct_utils():
             mesh = pg.createGrid(x=np.linspace(min(coordObs[:,1]), max(coordObs[:,1]),xn),
                      y=np.linspace(min(coordObs[:,2]), max(coordObs[:,2]),yn))
             
-        if isinstance(model, list):
-            Res = pg.interpolate(mesh, mesh_inv, model, method='spline')
-            stream = -pg.solver.grad(mesh, uu)*(1/Res).array()[:, None]
-        else: 
+        if isinstance(model, float):
             stream = -pg.solver.grad(mesh, uu)*(1/model)        
 
+        else: 
+            res = pg.interpolate(mesh, mesh_inv, model, method='spline')
+            stream = -pg.solver.grad(mesh, uu)*(1/res).array()[:, None]
 
 
         if kwargs.get('vmin'):

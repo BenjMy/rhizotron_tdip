@@ -7,8 +7,8 @@ Created on Thu Jan 14 11:36:11 2021
 
 # load observations file
 # compute differences
-
-dates = []
+# '0209' #  '1712' 0112 '1310' '1611'
+dates = ['0209','0218']
 
 for i, d in enumerate(dates):
     obs = np.loadtxt('process_data/' + d + '')

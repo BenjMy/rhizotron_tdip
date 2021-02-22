@@ -251,7 +251,7 @@ coordE_f = np.array(coordE_f)
 if invERT:
     rho_fwd = pg.interpolate(mesh3d_fwd, mesh3d_inv, model, method='spline')
     rhomap = rho_fwd.array()
-    id0 = np.where(rho.array() <=0)
+    id0 = np.where(rho_fwd.array() <=0)
     rhomap[id0] = 0.1
 else:
     model = waterRes
