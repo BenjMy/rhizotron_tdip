@@ -1,2 +1,2 @@
-import lib
+import rhizo.utils_rhizo
 import notebooks
