@@ -7,5 +7,5 @@ dependencies:
 - pygimli
 - pybert
 - seaborn
-#- pyvista
+- pyvista
 #- resipy

@@ -6,7 +6,6 @@ Created on Mon Sep 21 11:04:31 2020
 """
 
 # import libraries
-from resipy import R2 # geophysics tools
 import numpy as np # matrice operations
 import pyvista as pv # if not installed : pip install with conda install pyvista (in a conda terminal)
 import os 
@@ -23,6 +22,7 @@ os.chdir(main)
     
 def invert_Resipy_ERT(date, inputfileERT):
         
+    from resipy import R2 # geophysics tools
 
     #date = '1217' #
     #inputfileERT = 'ERT_0113.csv' #'ERT_1217.csv'
