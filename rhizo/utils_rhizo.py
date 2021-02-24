@@ -23,7 +23,8 @@ class fct_utils():
         geomPath= './geom/'
         meshPath= './mesh/'
         icsdPath= './icsd/'
-        figpath= './fig/'
+        figPath= './fig/'
+        processedPath= './processed_data/'
         
         rmvInvalid = False
         all_gates = False
@@ -41,12 +42,16 @@ class fct_utils():
             icsdPath += '_M' + str(gateIP)
         icsdPath += '/'
         
-        figpath += date + '/'
-        if not os.path.exists(figpath):
-            os.makedirs(figpath)
+        figPath += date + '/'
+        if not os.path.exists(figPath):
+            os.makedirs(figPath)
+
+        processedPath += date + '/'
+        if not os.path.exists(processedPath):
+            os.makedirs(processedPath)
+            
     
-    
-        return geomPath, meshPath, icsdPath, figpath
+        return geomPath, meshPath, icsdPath, figPath, processedPath
 
 
 #%%  ------- MALM -----------------------------------------------------####
@@ -295,12 +300,17 @@ class fct_utils():
         Obs.set('r', Obs('u')/Obs('i'))
         Obs.set('Rec',np.zeros(len(Obs('u'))))
         print("Data before filtering:", Obs)
-
+        process_folder = os.getcwd()
         savefile=False
         for key, value in kwargs.items():
             if key == 'savefile':
                 savefile = value
-
+            if key == 'date':
+                date = value
+                process_folder = './processed_data/' + date +'/' 
+                
+                if not os.path.exists(process_folder):
+                    os.makedirs(process_folder)
                 
         if Rec==True:
             sC = Obs.sensorCount()
@@ -395,16 +405,16 @@ class fct_utils():
 
         
         if savefile==True: 
-            if gIP: 
+            if gIP is not None: 
                 print('TDIP export')
                 sep = '_'
-                NameSave = 'O'+ os.path.basename(DataName).split(sep, 1)[0] + 'M'+str(gIP) + '.txt'
+                NameSave = process_folder + 'O'+ os.path.basename(DataName).split(sep, 1)[0] + 'M'+str(gIP) + '.txt'
                 f = open(NameSave,'w')
                 np.savetxt(f, np.array(Obs['M'+str(gIP)]), delimiter='\t',fmt='%1.6f')   # X is an array
                 f.close()
             else:
                 sep = '.'
-                NameSave = 'O'+ os.path.basename(DataName).split(sep, 1)[0] + '.txt'
+                NameSave = process_folder + 'O'+ os.path.basename(DataName).split(sep, 1)[0] + '.txt'
                 f = open(NameSave,'w')
                 np.savetxt(f, np.array(Obs("r")), delimiter='\t',fmt='%1.6f')   # X is an array
                 f.close()
@@ -487,7 +497,9 @@ class fct_utils():
                  Xaxis = value            
             if key == 'mesh_inv':
                  mesh_inv = value
-             
+            if key == 'date':
+                 date = value
+                 
         xn = 30
         yn = 30
 
@@ -496,23 +508,28 @@ class fct_utils():
 
         xx, yy = np.meshgrid(xx, yy)
         points = np.transpose(np.vstack((coordObs[:,1], coordObs[:,2])))
-        u_interp = interpolate.griddata(points,
-                                        Obs,
-                                        (xx, yy), 
-                                        method='cubic')
-        uu = np.reshape(u_interp,[xn*yn])
+
 
         if mesh is None:
             mesh = pg.createGrid(x=np.linspace(min(coordObs[:,1]), max(coordObs[:,1]),xn),
                      y=np.linspace(min(coordObs[:,2]), max(coordObs[:,2]),yn))
-            
-        if isinstance(model, float):
-            stream = -pg.solver.grad(mesh, uu)*(1/model)        
 
+        #u_interp = interpolate.griddata(points,
+        #                                Obs,
+        #                                (xx, yy), 
+        #                                method='cubic')
+        #uu = np.reshape(u_interp,[xn*yn])
+        uu = pg.interpolate(mesh, (xx, yy), Obs, method='spline')
+
+        
+        if isinstance(model, float):
+            stream = -pg.solver.grad(mesh, uu)*(1/model)     
+            jj = -uu*(1/model)
         else: 
             res = pg.interpolate(mesh, mesh_inv, model, method='spline')
+            jj = -uu*(1/res).array()
             stream = -pg.solver.grad(mesh, uu)*(1/res).array()[:, None]
-
+            
 
         if kwargs.get('vmin'):
            vmin = kwargs.get('vmin')
@@ -565,6 +582,8 @@ class fct_utils():
         #j = -pg.solver.grad(mesh, uu) * (1/Res)
         #ax, _ = pg.show(mesh, hold=True, alpha=0.3)
         #drawStreams(ax, mesh, j)
+        
+        return mesh, uu, model
 
     def Ref_N_zeroP(ref_elec=71):
         """

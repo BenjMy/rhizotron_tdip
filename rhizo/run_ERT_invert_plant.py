@@ -182,7 +182,7 @@ def invert_pygimli_ERT(inputfileERT,sensors,mesh,date):
     model = ert.invert(mesh=mesh,lam=20,verbose=True)
     pg.info('Inversion stopped with chi² = {0:.3}'.format(ert.fw.chi2()))
 
-    return model
+    return model, ert
 
 
 if __name__ == '__main__':
