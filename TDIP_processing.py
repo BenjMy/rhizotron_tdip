@@ -40,19 +40,19 @@ A = 72-1 # Id electrode A
 B = 65-1 # Id electrode B
 injection_duration = 2 # time of injection
 # MALMIP_0122 MALMIP_0113 'MALMIP1217' 'MALMIP1201.bin' 'MALMIP1013' 'MALMIP1116.bin' # filename in raw data folder
-date = '0209' # 0209 0218 1712' 0112 '1310' '1611' # (ddmm)
+date = '0112' # 0209 0218 1712' 0112 (cable) '1310' '1611' # (ddmm)
 inputfileMALM = 'MALMIP_' + date + '.bin' #  
 inputfileERT = 'ERT_' + date + '.bin' #
 split_Nfix = [True, 71-1]
 Nfix = 71-1 #71-1  #None 71-1 # Id electrode N , put None if N is varying
 
-fitCC = True # show Cole-Cole fitted parameters (to compare with literature)
+fit_CC = True # show Cole-Cole fitted parameters (to compare with literature)
 
 rmvInvalid = False # True if you want to write filtered files/ False for raw data
 rmv_outliers = True
 rmv_id= None #None # 61-1 o None
 rmv_dup = True
-rmv_filter_fit = False 
+rmv_filter_fit_CC = True 
 
 all_gates= True
 if not all_gates: 
@@ -163,19 +163,29 @@ if rmv_outliers:
     IPcurves_f, valid_outliers = FU.filterTDIP(IPcurves,id_elec_2rmv)
 
 #if rmv_id: 
-IPcurves.data['M1'].array()
+#IPcurves.data['M1'].array()
         
 
-#%% plot Cole Cole model parameters 
+#%% fit Cole Cole model parameters 
 # ----------------
-if fitCC:
-   valid_r, valid_m0, valid_tau, IPcurves_f, plt = plot_CC_violin(IPcurves_f, 
-                                                             m0=[-9e99,9e99],
-                                                             tau=[-9e99,9e99],
-                                                             r=[-9e99,9e99])
+if fit_CC:
+   validCC, fitCC, plt = plot_CC_violin(IPcurves_f,
+                                        m0_lim=[-9e99,500],
+                                        tau_lim=[-9e99,9e99],
+                                        r_lim=[-9e99,9e99],
+                                        fit=True, filtCC=True)
+   
    plt.savefig(figpath + 'violin_CC_fit_raw.png')
+   print(max(IPcurves_f.data['m0']))
 
-j=0
+
+print('valid_split:' + str(np.count_nonzero(valid_split==1)))
+print('valid_outliers:' + str(np.count_nonzero(valid_outliers==1)))
+print('valid_dup:' + str(np.count_nonzero(valid_dup==1)))
+print('validCC:' + str(np.count_nonzero(validCC==1)))
+
+valid = np.ones(len(IPcurves_f.data('m')))
+j=0 # loop on quadripoles
 for i, v in enumerate(valid):
     if split_Nfix[0]:
         if valid_split[j] == 0:
@@ -186,18 +196,15 @@ for i, v in enumerate(valid):
     if rmv_dup:
         if valid_dup[j] == 0:
             valid[i] = 0
-    if rmv_filter_fit:
+    if rmv_filter_fit_CC:
         try:
-             valid_r
+              validCC
         except NameError:
-             valid_r = np.ones(len(IPcurves.data('m')))
-        if valid_r[j] == 0:
+              validCC = np.ones(len(IPcurves_f.data('m')))
+        #for k in range(np.shape(validCC)[0]):
+            #if validCC[k][j] == 0:
+        if validCC[j] == 0:
             valid[i] = 0
-        if valid_tau[j] == 0:
-            valid[i] = 0           
-        if valid_m0[j] == 0:
-            valid[i] = 0
-            
     j = j + 1
 
 
@@ -206,19 +213,18 @@ IPcurves_f.MA = IPcurves_f.MA[:, IPcurves_f.data['valid'].array()==1]
 IPcurves_f.data.removeInvalid()
 IPcurves_f.data.save(processedPath + 'TDIP_filtered.data')
 
+IPcurves_f.data['tau']
+
+plt = plot_CC_violin(IPcurves_f) 
+
+        
+fig, ax = plt.subplots()
+ax = IPcurves_f.showDecay(nr=np.arange(0,len(IPcurves.data['a'])), showFit=False, 
+                   yscale='linear',xscale='linear', ax=ax)
+plt.savefig(figpath + 'filtered_decay' + date + '.png')
+
+
 #%% Show results after filtering
-
-if fitCC:
-   _,_,_,IPcurves_f,plt = plot_CC_violin(IPcurves_f)
-   plt.savefig(figpath + 'violin_CC_fit_processed.png')
-np.count_nonzero(valid==0)
-
-
-m0, tau, c, fit = IPcurves_f.fitModelDecays(useColeCole=True)
-res = IPcurves.data('r')
-
-IPcurves_f.data.set('m0', m0)
-IPcurves_f.data.set('m0', m0)
 
 coordE_f = []
 for i, mi in enumerate(IPcurves_f.data['m']):
@@ -231,10 +237,12 @@ coordE_f = np.array(coordE_f)
 #%% CC (fit by exponential) plot 
 fig, axs = plt.subplots(1, 4, sharex='all', sharey='all',figsize=(20,5))
 
-for i, cs in enumerate(['m0','tau','c', 'res']):
-    sc=axs[i].scatter(coordE_f[:,1], coordE_f[:,2], c=eval(cs), 
+for i, cs in enumerate(['m0','tau','c', 'r']):
+    sc=axs[i].scatter(coordE_f[:,1], coordE_f[:,2], c=IPcurves_f.data[cs], 
                   cmap ='coolwarm',s=5e2) # norm=matplotlib.colors.Normalize()
     cbar = plt.colorbar(sc,ax=axs[i])
+    axs[i].set_ylim([min(coordE[:,2]), max(coordE[:,2])])
+    axs[i].set_xlim([min(coordE[:,1]), max(coordE[:,1])])
     #cbar.set_label('V')   
     axs[i].set_ylabel('y [m]',fontsize=15)
     axs[i].set_xlabel('x [m]',fontsize=15)
@@ -338,11 +346,11 @@ if Nfix is not None:
     plt.savefig(figpath +'streamlines_PV.png')
     mesh.save(processedPath +'streamlines_mesh.bms')
     np.savetxt(processedPath +'uu' + date + '.txt', uu)
-    np.savetxt(processedPath +'model' + date + '.txt', model)
+    #np.savetxt(processedPath +'model' + date + '.txt', model)
         
     fig, ax = plt.subplots(nrows=1, ncols=4,figsize=(20,5))
     for i, g in enumerate(range(1,20,5)):
-        mesh, stream = FU.streamlines(coordE_f, Obs('M'+str(g)).array(), model,
+        mesh, stream, _ = FU.streamlines(coordE_f, Obs('M'+str(g)).array(), model,
                        sensors=sensors, A=A, B=B, Nfix=Nfix, ax=ax[i],
                        vmin=-10, vmax=10, mesh_inv=mesh3d_inv)
         ax[i].set_title('Gate t:' + str(IPcurves.t[g-1]) + 's')

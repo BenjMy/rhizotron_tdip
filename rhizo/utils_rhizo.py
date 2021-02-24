@@ -514,12 +514,12 @@ class fct_utils():
             mesh = pg.createGrid(x=np.linspace(min(coordObs[:,1]), max(coordObs[:,1]),xn),
                      y=np.linspace(min(coordObs[:,2]), max(coordObs[:,2]),yn))
 
-        #u_interp = interpolate.griddata(points,
-        #                                Obs,
-        #                                (xx, yy), 
-        #                                method='cubic')
-        #uu = np.reshape(u_interp,[xn*yn])
-        uu = pg.interpolate(mesh, (xx, yy), Obs, method='spline')
+        u_interp = interpolate.griddata(points,
+                                        Obs,
+                                        (xx, yy), 
+                                        method='cubic')
+        uu = np.reshape(u_interp,[xn*yn])
+        #uu = pg.interpolate(mesh, (xx, yy), Obs, method='spline')
 
         
         if isinstance(model, float):
