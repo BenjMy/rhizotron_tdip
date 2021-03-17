@@ -486,7 +486,8 @@ class fct_utils():
 
     def streamlines(coordObs, Obs, model, mesh=None, **kwargs):
         """
-        Current streamlines
+        Current streamlines; interpolate model from mesh_inv to new mesh to build streamlines
+        takes the gradient of the potential and multiply it by the interpolated resistivity model
         -------
         - mesh: mesh to compute the quiver plot
     
@@ -524,10 +525,19 @@ class fct_utils():
         
         if isinstance(model, float):
             stream = -pg.solver.grad(mesh, uu)*(1/model)     
-            jj = -uu*(1/model)
+            #jj = -uu*(1/model)
         else: 
             res = pg.interpolate(mesh, mesh_inv, model, method='spline')
-            jj = -uu*(1/res).array()
+            
+            # pg.show(mesh, data=res, notebook=True, savefig='model_interpolated.png')
+    
+            # plotter, _ = pg.show(mesh_inv, data=model,
+            #                      alpha=0.9, hold=True, notebook=True)
+            # plotter.view_xy()
+            # plotter.show()
+            # plotter.screenshot('model3d.png')
+    
+            #jj = -uu*(1/res).array()
             stream = -pg.solver.grad(mesh, uu)*(1/res).array()[:, None]
             
 

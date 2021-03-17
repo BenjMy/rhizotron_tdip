@@ -40,7 +40,7 @@ A = 72-1 # Id electrode A
 B = 65-1 # Id electrode B
 injection_duration = 2 # time of injection
 # MALMIP_0122 MALMIP_0113 'MALMIP1217' 'MALMIP1201.bin' 'MALMIP1013' 'MALMIP1116.bin' # filename in raw data folder
-date = '0112' # 0209 0218 1712' 0112 (cable) '1310' '1611' # (ddmm)
+date = '0112' # 0301 0209 0218 1712' 0112 (cable single point) '1310' '1611' # (ddmm)
 inputfileMALM = 'MALMIP_' + date + '.bin' #  
 inputfileERT = 'ERT_' + date + '.bin' #
 split_Nfix = [True, 71-1]
@@ -88,9 +88,9 @@ if invERT:
     mesh3d_inv.exportVTK(figpath +'model' + date + '.vtk')
     
     plotter, _ = pg.show(mesh3d_inv, data=model,
-                         alpha=0.9, hold=True, notebook=True)
+                         alpha=0.9, hold=True, notebook=True,cmap='bwr')
     plotter.view_xy()
-    #plotter.clim([20, 60])
+    #plotter.clim([8, 10])
     plotter.show()
     plotter.screenshot(figpath + 'model' + date + '.png')
     
@@ -173,7 +173,8 @@ if fit_CC:
                                         m0_lim=[-9e99,500],
                                         tau_lim=[-9e99,9e99],
                                         r_lim=[-9e99,9e99],
-                                        fit=True, filtCC=True)
+                                        fit=True, filtCC=True,
+                                        useColeCole=True)
    
    plt.savefig(figpath + 'violin_CC_fit_raw.png')
    print(max(IPcurves_f.data['m0']))
@@ -248,6 +249,7 @@ for i, cs in enumerate(['m0','tau','c', 'r']):
     axs[i].set_xlabel('x [m]',fontsize=15)
     axs[i].set_title(cs)
     axs[i].set_aspect('equal')
+plt.savefig(figpath + 'cc_fitted' + date + '.png')
 
 
 #%% Show decay
@@ -325,20 +327,23 @@ else:
 
 #%% foward modelling of Green's functions
 # mk_full_malm --> 3rd file = simulated green functions (simulated data to compare with observation data)
-SeqFullMALM= MR.mk_full_malm(dataABMN-1, 
-                             VRTe = range(len(sensors),
-                                          len(sensors)+len(VRTEpos)),
-                             mesh=mesh3d_fwd, 
-                             R3=False) # output .shm with sensors
+# SeqFullMALM= MR.mk_full_malm(dataABMN-1, 
+#                              VRTe = range(len(sensors),
+#                                           len(sensors)+len(VRTEpos)),
+#                              mesh=mesh3d_fwd, 
+#                              R3=False) # output .shm with sensors
 
 #pg.show(mesh3d_fwd,data=rhomap,notebook=True)
 #pg.show(mesh3d_inv,data=rhomap,notebook=True)
 
-MR.SimulateGreenFcts(mesh_VRTs=mesh3d_fwd,rhomapVRTs=rhomap,schemeVrts=SeqFullMALM, 
-                     Name='VRTeSim')
+# MR.SimulateGreenFcts(mesh_VRTs=mesh3d_fwd,rhomapVRTs=rhomap,schemeVrts=SeqFullMALM, 
+#                      Name='VRTeSim')
 
 
 #%% Quiver plot (gradient*conductivity)
+# interpolate model from mesh_inv to new mesh to build streamlines
+# takes the gradient of the potential and multiply it by the interpolated resistivity model
+
 if Nfix is not None:
     mesh, uu, model = FU.streamlines(coordE_f, Obs('r').array(), model,
                    sensors=sensors, A=A, B=B, Nfix=Nfix,
@@ -370,53 +375,53 @@ if Nfix is not None:
 
 #%%  Interpolate resistivity model and potential values to the same grid
 
-xx = np.linspace(min(coordE_f[:,1]), max(coordE_f[:,1]),30)
-yy = np.linspace(min(coordE_f[:,2]), max(coordE_f[:,2]),30)
-X, Y = np.meshgrid(xx, yy)
+# xx = np.linspace(min(coordE_f[:,1]), max(coordE_f[:,1]),30)
+# yy = np.linspace(min(coordE_f[:,2]), max(coordE_f[:,2]),30)
+# X, Y = np.meshgrid(xx, yy)
 
-grid = pg.createGrid(xx, yy)
+# grid = pg.createGrid(xx, yy)
 
-xx, yy, zz = [],[],[]
-for node in grid.nodes():
-    xx.append(node.pos()[0])
-    yy.append(node.pos()[1])
-    zz.append(node.pos()[2])
+# xx, yy, zz = [],[],[]
+# for node in grid.nodes():
+#     xx.append(node.pos()[0])
+#     yy.append(node.pos()[1])
+#     zz.append(node.pos()[2])
     
-points = np.transpose(np.vstack((coordE_f[:,1], coordE_f[:,2])))
-from scipy import interpolate
-u_interp = interpolate.griddata(points,
-                                Obs('r').array(),
-                                (xx, yy), 
-                                method='nearest')
+# points = np.transpose(np.vstack((coordE_f[:,1], coordE_f[:,2])))
+# from scipy import interpolate
+# u_interp = interpolate.griddata(points,
+#                                 Obs('r').array(),
+#                                 (xx, yy), 
+#                                 method='nearest')
 
-print('Mesh: Nodes:', grid.nodeCount(),
-      'Cells:', grid.cellCount(),
-      'Boundaries:', grid.boundaryCount())
+# print('Mesh: Nodes:', grid.nodeCount(),
+#       'Cells:', grid.cellCount(),
+#       'Boundaries:', grid.boundaryCount())
 
-uu = np.reshape(u_interp,[30,30])
+# uu = np.reshape(u_interp,[30,30])
 
-fig1, ax2 = plt.subplots(constrained_layout=True)
-CS = ax2.contourf(X, Y , uu, 10, cmap=plt.cm.bone)
+# fig1, ax2 = plt.subplots(constrained_layout=True)
+# CS = ax2.contourf(X, Y , uu, 10, cmap=plt.cm.bone)
 
-upg = pg.interpolate(mesh3d_inv, [X, Y], np.hstack(u_interp), method='linear')
+# upg = pg.interpolate(mesh3d_inv, [X, Y], np.hstack(u_interp), method='linear')
 
-upg = pg.interpolate(mesh3d_inv, 
-                     coordE_f[:,1:3], 
-                     Obs('r').array(), method='linear')
+# upg = pg.interpolate(mesh3d_inv, 
+#                      coordE_f[:,1:3], 
+#                      Obs('r').array(), method='linear')
 
-import torch
-x = coordE_f[:,1:3](torch.from_numpy(x))
+# import torch
+# x = coordE_f[:,1:3](torch.from_numpy(x))
 
 
-plotter, _ = pg.show(mesh3d_inv, data=upg.array(), notebook=True)
+# plotter, _ = pg.show(mesh3d_inv, data=upg.array(), notebook=True)
 
-plotter.view_xy()
-#plotter.clim([20, 60])
-plotter.show()
-plotter.close()
+# plotter.view_xy()
+# #plotter.clim([20, 60])
+# plotter.show()
+# plotter.close()
     
-mesh3d_inv.addData('upg',upg)
-mesh3d_inv.exportVTK(figpath +'upg' + date + '.vtk')
+# mesh3d_inv.addData('upg',upg)
+# mesh3d_inv.exportVTK(figpath +'upg' + date + '.vtk')
 
 
 

@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 def plot_CC_violin(IPcurves,m0_lim=[0,100],tau_lim=[0.1,10],r_lim=[30,3000], 
-                   filtCC=False, fit=False):
+                   filtCC=False, fit=False, useColeCole=False):
     '''
     Parameters
     ----------
@@ -41,7 +41,7 @@ def plot_CC_violin(IPcurves,m0_lim=[0,100],tau_lim=[0.1,10],r_lim=[30,3000],
     #IPcurves_abs.fitDecays(show=False)         
     
     if fit:
-        m0, tau, c, fit = IPcurves.fitModelDecays(useColeCole=True)
+        m0, tau, c, fit = IPcurves.fitModelDecays(useColeCole=useColeCole)
         IPcurves.data.set('m0', m0)
         IPcurves.data.set('tau', tau)
         IPcurves.data.set('c', c)

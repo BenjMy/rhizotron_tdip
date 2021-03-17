@@ -154,7 +154,7 @@ def invert_pygimli_ERT(inputfileERT,sensors,mesh,date):
     if not os.path.exists(invpath):
         os.makedirs(invpath)
         
-    dataERT = pb.load(main + './raw_data/' + inputfileERT)
+    dataERT = pb.load(main + '/raw_data/ERT/' + inputfileERT)
     dataERT.setSensorPositions(sensors)
     
     ert = pg.physics.ERTManager(dataERT)  # sr=False, verbose=True, debug=False)
