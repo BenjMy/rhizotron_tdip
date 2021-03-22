@@ -40,7 +40,7 @@ A = 72-1 # Id electrode A
 B = 65-1 # Id electrode B
 injection_duration = 2 # time of injection
 # MALMIP_0122 MALMIP_0113 'MALMIP1217' 'MALMIP1201.bin' 'MALMIP1013' 'MALMIP1116.bin' # filename in raw data folder
-date = '0112' # 0301 0209 0218 1712' 0112 (cable single point) '1310' '1611' # (ddmm)
+date = '0319' # 0319 0301 0209 0218 1712' 0112 (cable single point) '1310' '1611' # (ddmm)
 inputfileMALM = 'MALMIP_' + date + '.bin' #  
 inputfileERT = 'ERT_' + date + '.bin' #
 split_Nfix = [True, 71-1]
@@ -78,8 +78,6 @@ mesh3d_inv, sensors = FU.mesh_import(meshPath + 'BaseRhizo_Vrte_inv.msh')
 #    k = invert_Resipy_ERT(date, inputfileERTcsv)
 #    k.showResults()
 #    k.saveInvPlots(figpath + 'figs')
-       
-    
     
 if invERT:
     #inputfileERT = 'ERT_0122.bin'
@@ -106,7 +104,7 @@ if invERT:
 #plt.show()
 
 #%% Import data TDIP
-IPcurves = tdip.TDIPdata('./raw_data/' + inputfileMALM) # e.g. ABEM or Syscal TXT export
+IPcurves = tdip.TDIPdata('./raw_data/MALM/' + inputfileMALM) # e.g. ABEM or Syscal TXT export
 valid = np.ones(len(IPcurves.data('m')))
 
 fig, ax = plt.subplots()
@@ -116,7 +114,7 @@ plt.savefig(figpath + 'rawdecay' + date + '.png')
 
 #%% split and filter to Nfix
 # ----------------
-IPcurves_f = tdip.TDIPdata('./raw_data/' + inputfileMALM)
+IPcurves_f = tdip.TDIPdata('./raw_data/MALM/' + inputfileMALM)
 
 if split_Nfix[0]:
 
@@ -267,8 +265,8 @@ VRTEpos= FU.VRTEpos(mesh=mesh3d_fwd,dim=3) # return VRTE file format icsd Marker
 #plt.scatter(VRTEpos[:,0],VRTEpos[:,1],color='b')
 
 # 2nd file = observations data
-Obs_raw = pb.importer.importSyscalPro('./raw_data/' + inputfileMALM) 
-Obs, dataABMN=  FU.PrepareMALMData('./raw_data/' + inputfileMALM, Rec=False, DevErr=1,
+Obs_raw = pb.importer.importSyscalPro('./raw_data/MALM/' + inputfileMALM) 
+Obs, dataABMN=  FU.PrepareMALMData('./raw_data/MALM/' + inputfileMALM, Rec=False, DevErr=1,
                            MinV=1, MaxRc=1, Kfact=1, MinMaxAppRes=1, 
                            SwE=False, 
                            valid=valid,

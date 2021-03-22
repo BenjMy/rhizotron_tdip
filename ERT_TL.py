@@ -42,7 +42,7 @@ elecs = np.copy(elecs_raw)
 # ---------------------------------------------------------#
 csvfiles = glob.glob1(MainPath  + 'raw_data/ERT/',"*.csv")
 
-for i in enumerate([csvfiles[0],csvfiles[5]]):
+for i in enumerate([csvfiles[0],csvfiles[6]]):
 
     k = R2(MainPath + 'ERT_inversion/step' + str(i[0]), typ='R3t')
     k.setTitle('Rhizo_'+str(i[0]))
