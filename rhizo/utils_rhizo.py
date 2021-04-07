@@ -296,9 +296,14 @@ class fct_utils():
         return:
         ===
         """
-        Obs = pb.importer.importSyscalPro(DataName) 
-        Obs.set('r', Obs('u')/Obs('i'))
-        Obs.set('Rec',np.zeros(len(Obs('u'))))
+        if type(DataName) is str:
+            Obs = pb.importer.importSyscalPro(DataName) 
+            Obs.set('r', Obs('u')/Obs('i'))
+            Obs.set('Rec',np.zeros(len(Obs('u'))))
+        else: 
+            Obs = DataName
+            DataName = 'test'
+            
         print("Data before filtering:", Obs)
         process_folder = os.getcwd()
         savefile=False
@@ -311,6 +316,9 @@ class fct_utils():
                 
                 if not os.path.exists(process_folder):
                     os.makedirs(process_folder)
+            if key == 'NameSave':
+                NameSave = value
+                
                 
         if Rec==True:
             sC = Obs.sensorCount()
@@ -408,13 +416,15 @@ class fct_utils():
             if gIP is not None: 
                 print('TDIP export')
                 sep = '_'
-                NameSave = process_folder + 'O'+ os.path.basename(DataName).split(sep, 1)[0] + 'M'+str(gIP) + '.txt'
+                if NameSave is None:
+                    NameSave = process_folder + 'O'+ os.path.basename(DataName).split(sep, 1)[0] + 'M'+str(gIP) + '.txt'
                 f = open(NameSave,'w')
-                np.savetxt(f, np.array(Obs['M'+str(gIP)]), delimiter='\t',fmt='%1.6f')   # X is an array
+                np.savetxt(f, np.array(Obs['m'+str(gIP)]), delimiter='\t',fmt='%1.6f')   # X is an array
                 f.close()
             else:
                 sep = '.'
-                NameSave = process_folder + 'O'+ os.path.basename(DataName).split(sep, 1)[0] + '.txt'
+                if NameSave is None:
+                    NameSave = process_folder + 'O'+ os.path.basename(DataName).split(sep, 1)[0] + '.txt'
                 f = open(NameSave,'w')
                 np.savetxt(f, np.array(Obs("r")), delimiter='\t',fmt='%1.6f')   # X is an array
                 f.close()
@@ -449,13 +459,13 @@ class fct_utils():
     
         # --- Writing the VRTe Coordinates into a file! ------------------------------
         
-        #f = open('VRTeCoord.txt','w')
-        #np.savetxt(f, Pos_vrtS[:,0:2], delimiter='\t',fmt='%1.3f')   # X is an array
-        # f.close()
-        #if dim==3:
-        #     f = open('VRTeCoord.txt','w')
-        #     np.savetxt(f, Pos_vrtS[:,0:3], delimiter='\t',fmt='%1.3f')   # X is an array
-        #     f.close()
+        f = open('VRTeCoord.txt','w')
+        np.savetxt(f, Pos_vrtS[:,0:2], delimiter='\t',fmt='%1.3f')   # X is an array
+        f.close()
+        if dim==3:
+            f = open('VRTeCoord.txt','w')
+            np.savetxt(f, Pos_vrtS[:,0:3], delimiter='\t',fmt='%1.3f')   # X is an array
+            f.close()
         return Pos_vrtS
     
     
@@ -504,16 +514,17 @@ class fct_utils():
         xn = 30
         yn = 30
 
-        xx = np.linspace(min(coordObs[:,1]), max(coordObs[:,1]),xn)
-        yy = np.linspace(min(coordObs[:,2]), max(coordObs[:,2]),yn)
+        xx = np.linspace(min(coordObs[:,0]), max(coordObs[:,0]),xn)
+        yy = np.linspace(min(coordObs[:,1]), max(coordObs[:,1]),yn)
 
         xx, yy = np.meshgrid(xx, yy)
-        points = np.transpose(np.vstack((coordObs[:,1], coordObs[:,2])))
-
+        points = np.transpose(np.vstack((coordObs[:,0], coordObs[:,1])))
+        print(len(points))
+        print(len(Obs))
 
         if mesh is None:
-            mesh = pg.createGrid(x=np.linspace(min(coordObs[:,1]), max(coordObs[:,1]),xn),
-                     y=np.linspace(min(coordObs[:,2]), max(coordObs[:,2]),yn))
+            mesh = pg.createGrid(x=np.linspace(min(coordObs[:,0]), max(coordObs[:,0]),xn),
+                     y=np.linspace(min(coordObs[:,1]), max(coordObs[:,1]),yn))
 
         u_interp = interpolate.griddata(points,
                                         Obs,
@@ -556,7 +567,7 @@ class fct_utils():
         else:
             fig, ax = plt.subplots()
             
-        sc=ax.scatter(coordObs[:,1], coordObs[:,2], c=Obs, 
+        sc=ax.scatter(coordObs[:,0], coordObs[:,1], c=Obs, 
                       cmap ='coolwarm',s=5e2, vmin=vmin, vmax=vmax) # norm=matplotlib.colors.Normalize()
         cbar = plt.colorbar(sc,ax=ax)
         cbar.set_label('V')   
@@ -570,10 +581,12 @@ class fct_utils():
                    ax.annotate(str(i+1), (sensors[i,0],sensors[i,1]))   
             if kwargs.get('A'):
                 A = kwargs.get('A')
-                ax.scatter(sensors[A,0],sensors[A,1],color='r',marker='v',label='A. elec')
+                ax.scatter(sensors[A,0],sensors[A,1],color='y',marker='^',
+                           label='A. elec', s=5e2)
             if kwargs.get('B'):
                 B = kwargs.get('B')
-                ax.scatter(sensors[B,0],sensors[B,1],color='b',marker='v',label='B. elec')
+                ax.scatter(sensors[B,0],sensors[B,1],
+                           color='y',marker='v',label='B. elec', s=5e2)
             if kwargs.get('Nfix'):
                 Nfix = kwargs.get('Nfix')
                 ax.scatter(sensors[Nfix,0],sensors[Nfix,1],color='g',marker='v',label='Nfix. elec')
@@ -584,7 +597,7 @@ class fct_utils():
         
 
         drawStreams(ax, mesh, stream,
-                     color='green', quiver=True, linewidth=3.0)
+                     color='green', quiver=True, linewidth=6.0)
         
         
         # save for TL analysis

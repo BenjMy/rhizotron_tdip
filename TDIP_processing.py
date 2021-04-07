@@ -40,7 +40,7 @@ A = 72-1 # Id electrode A
 B = 65-1 # Id electrode B
 injection_duration = 2 # time of injection
 # MALMIP_0122 MALMIP_0113 'MALMIP1217' 'MALMIP1201.bin' 'MALMIP1013' 'MALMIP1116.bin' # filename in raw data folder
-date = '0319' # 0319 0301 0209 0218 1712' 0112 (cable single point) '1310' '1611' # (ddmm)
+date = '0218' # 0319 0301 0209 0218 1712' 0112 (cable single point) '1310' '1611' # (ddmm)
 inputfileMALM = 'MALMIP_' + date + '.bin' #  
 inputfileERT = 'ERT_' + date + '.bin' #
 split_Nfix = [True, 71-1]
@@ -121,8 +121,6 @@ if split_Nfix[0]:
     IPcurves.data('m').array()
     idn = np.where(IPcurves.data('m')==split_Nfix[1])[0]
     idm = np.where(IPcurves.data('n')==split_Nfix[1])[0]
-    print(idn)
-    print(idm)
     idfix = list(idn) #+ list(idm) #list(idn)  #+ list(idm)
     
     IPcurves.data('a')[idfix].array()
@@ -162,7 +160,8 @@ if rmv_outliers:
 
 #if rmv_id: 
 #IPcurves.data['M1'].array()
-        
+
+
 
 #%% fit Cole Cole model parameters 
 # ----------------
@@ -218,7 +217,7 @@ plt = plot_CC_violin(IPcurves_f)
 
         
 fig, ax = plt.subplots()
-ax = IPcurves_f.showDecay(nr=np.arange(0,len(IPcurves.data['a'])), showFit=False, 
+ax = IPcurves_f.showDecay(nr=np.arange(0,len(IPcurves_f.data['a'])), showFit=False, 
                    yscale='linear',xscale='linear', ax=ax)
 plt.savefig(figpath + 'filtered_decay' + date + '.png')
 
@@ -233,7 +232,7 @@ for i, mi in enumerate(IPcurves_f.data['m']):
     coordE_f.append(coordE[id_coordE_f[0],:])
 coordE_f = np.array(coordE_f)
 
-#%% CC (fit by exponential) plot 
+#%% CC (fit by exponential) map plot 
 fig, axs = plt.subplots(1, 4, sharex='all', sharey='all',figsize=(20,5))
 
 for i, cs in enumerate(['m0','tau','c', 'r']):
@@ -422,7 +421,15 @@ if Nfix is not None:
 # mesh3d_inv.exportVTK(figpath +'upg' + date + '.vtk')
 
 
+import glob
+import shutil
 
+for fpath in glob.glob('OMALM*.txt'):  # this returns a list of the CURRENT contents. Therefore, there is no need to sanitize for the directories that we will later create
+    if not os.path.isdir(icsdPath):
+        os.mkdir(icsdPath)
+    shutil.move(fpath, icsdPath)
+    shutil.move(os.path.join(os.getcwd(), fpath), os.path.join(icsdPath, fpath))
+    
 #if icsd:
     #%% copy file to icsd folder
     #import glob

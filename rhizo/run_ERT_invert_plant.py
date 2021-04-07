@@ -9,7 +9,7 @@ Created on Mon Sep 21 11:04:31 2020
 import numpy as np # matrice operations
 import pyvista as pv # if not installed : pip install with conda install pyvista (in a conda terminal)
 import os 
-from rhizo.utils_rhizo import fct_utils as FU
+from utils_rhizo import fct_utils as FU
 import argparse
 import pybert as pb 
 import pygimli as pg
